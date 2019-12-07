@@ -51,7 +51,6 @@ def jump_if_false(src1, src2, modes):
     global pc
     a = memory[src1] if mode_or_zero(0) == 0 else src1
     b = memory[src2] if mode_or_zero(1) == 0 else src2
-
     if a == 0:
         pc = b
         return False
