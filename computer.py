@@ -1,7 +1,17 @@
 import itertools
+from functools import wraps
 
 def positional_mode(modes, i):
     return modes[-(i + 1)] == 0 if i < len(modes) else True
+
+def two_argument_assignment(func):
+    @wraps(func)
+    def wrapped(self, src1, src2, dst, modes):
+        a = self.memory[src1] if positional_mode(modes, 0) else src1
+        b = self.memory[src2] if positional_mode(modes, 1) else src2
+        func(self, a, b, dst)
+        return True
+    return wrapped
 
 class Computer:
     def __init__(self, initial_memory, input_queue):
@@ -35,17 +45,21 @@ class Computer:
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
 
-    def add(self, src1, src2, dst, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+    @two_argument_assignment
+    def add(self, a, b, dst):
         self.memory[dst] = a + b
-        return True
 
-    def mul(self, src1, src2, dst, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+    @two_argument_assignment
+    def mul(self, a, b, dst):
         self.memory[dst] = a * b
-        return True
+
+    @two_argument_assignment
+    def equals(self, a, b, dst):
+        self.memory[dst] = 1 if a == b else 0
+
+    @two_argument_assignment
+    def less_than(self, a, b, dst):
+        self.memory[dst] = 1 if a < b else 0
 
     def get_input(self, src, _):
         self.memory[src] = int(input("Enter input value: "))
@@ -54,18 +68,6 @@ class Computer:
     def write_output(self, src, modes):
         value = self.memory[src] if positional_mode(modes, 0) else src
         print(value)
-        return True
-
-    def equals(self, src1, src2, dst, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
-        self.memory[dst] = 1 if a == b else 0
-        return True
-
-    def less_than(self, src1, src2, dst, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
-        self.memory[dst] = 1 if a < b else 0
         return True
 
     def jump_if_true(self, src1, src2, modes):
