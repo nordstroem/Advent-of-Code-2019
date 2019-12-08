@@ -23,12 +23,10 @@ def zero_argument_assignment(func):
 
 def two_argument_conditional(func):
     @wraps(func)
-    def wrapped(self, src1, src2, dst, modes):
+    def wrapped(self, src1, src2, modes):
         a = self.memory[src1] if positional_mode(modes, 0) else src1
         b = self.memory[src2] if positional_mode(modes, 1) else src2
-        old_pc = self.pc
-        func(self, a, b)
-        return old_pc == self.pc
+        return func(self, a, b)
     return wrapped
 
 def one_argument_read(func):
@@ -40,11 +38,13 @@ def one_argument_read(func):
     return wrapped
 
 class Computer:
-    def __init__(self, memory, input_queue=[]):
+    def __init__(self, memory, input_queue=[], verbose=False):
         self.memory = memory
         self.pc = 0
         self.input_queue = deque(reversed(input_queue))
-    
+        self.output_log = []
+        self.verbose = verbose
+
     def operations(self, opcode):
         ops = {
             1: self.add,
@@ -96,15 +96,21 @@ class Computer:
 
     @one_argument_read
     def write_output(self, a):
-        print(a)
+        if(self.verbose):
+            print(a)
+        self.output_log.append(a)
 
     @two_argument_conditional
     def jump_if_true(self, a, b):
         if a != 0:
             self.pc = b
+            return False
+        return True
 
     @two_argument_conditional
     def jump_if_false(self, a, b):
         if a == 0:
             self.pc = b
+            return False
+        return True
 
