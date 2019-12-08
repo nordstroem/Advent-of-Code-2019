@@ -38,12 +38,13 @@ def one_argument_read(func):
     return wrapped
 
 class Computer:
-    def __init__(self, memory, input_queue=[], verbose=False):
+    def __init__(self, memory, input_queue, output_queue, verbose=False):
         self.memory = memory
         self.pc = 0
-        self.input_queue = deque(reversed(input_queue))
         self.output_log = []
         self.verbose = verbose
+        self.input_queue = input_queue
+        self.output_queue = output_queue
 
     def operations(self, opcode):
         ops = {
@@ -71,9 +72,6 @@ class Computer:
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
 
-    def add_input(self, value):
-        self.input_queue.appendleft(value)
-
     @two_argument_assignment
     def add(self, a, b, dst):
         self.memory[dst] = a + b
@@ -92,12 +90,13 @@ class Computer:
 
     @zero_argument_assignment
     def get_input(self, dst):
-        self.memory[dst] = self.input_queue.pop()
+        self.memory[dst] = self.input_queue.get()
 
     @one_argument_read
     def write_output(self, a):
         if(self.verbose):
             print(a)
+        self.output_queue.put(a)
         self.output_log.append(a)
 
     @two_argument_conditional
