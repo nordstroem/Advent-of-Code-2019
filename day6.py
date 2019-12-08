@@ -7,7 +7,6 @@ class Node:
 all_nodes = {"COM": Node(None)}
 
 orbits = [l.split(")") for l in read_lines("input6.txt")]
-#orbits = [l.split(")") for l in test_orbits]
 
 for target, planet in orbits:
     if target not in all_nodes:
@@ -28,15 +27,16 @@ you_orbit = all_nodes["YOU"].parent
 santa_orbit = all_nodes["SAN"].parent
 
 you_paths = []
-while you_orbit.parent != None:
+while you_orbit.parent:
     you_paths.append(you_orbit.parent)
     you_orbit = you_orbit.parent
     
 santa_paths = []
-while santa_orbit.parent != None:
+while santa_orbit.parent:
     santa_paths.append(santa_orbit.parent)
     santa_orbit = santa_orbit.parent
 
 intersection = [x for x in you_paths if x in santa_paths][0]
 
 print(you_paths.index(intersection) + santa_paths.index(intersection) + 2)
+print(min([you_paths.index(intersection) + santa_paths.index(intersection) + 2 for orbit in set(you_paths) & set(santa_paths)]))
