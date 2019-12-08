@@ -1,5 +1,6 @@
 import itertools
 from functools import wraps
+from collections import deque
 
 def positional_mode(modes, i):
     return modes[-(i + 1)] == 0 if i < len(modes) else True
@@ -13,11 +14,36 @@ def two_argument_assignment(func):
         return True
     return wrapped
 
+def zero_argument_assignment(func):
+    @wraps(func)
+    def wrapped(self, dst, _):
+        func(self, dst)
+        return True
+    return wrapped
+
+def two_argument_conditional(func):
+    @wraps(func)
+    def wrapped(self, src1, src2, dst, modes):
+        a = self.memory[src1] if positional_mode(modes, 0) else src1
+        b = self.memory[src2] if positional_mode(modes, 1) else src2
+        old_pc = self.pc
+        func(self, a, b)
+        return old_pc == self.pc
+    return wrapped
+
+def one_argument_read(func):
+    @wraps(func)
+    def wrapped(self, src, modes):
+        a = self.memory[src] if positional_mode(modes, 0) else src
+        func(self, a)
+        return True
+    return wrapped
+
 class Computer:
-    def __init__(self, initial_memory, input_queue):
-        self.memory = initial_memory
+    def __init__(self, memory, input_queue=[]):
+        self.memory = memory
         self.pc = 0
-        self.input_queue = input_queue
+        self.input_queue = deque(reversed(input_queue))
     
     def operations(self, opcode):
         ops = {
@@ -45,6 +71,9 @@ class Computer:
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
 
+    def add_input(self, value):
+        self.input_queue.appendleft(value)
+
     @two_argument_assignment
     def add(self, a, b, dst):
         self.memory[dst] = a + b
@@ -61,31 +90,21 @@ class Computer:
     def less_than(self, a, b, dst):
         self.memory[dst] = 1 if a < b else 0
 
-    def get_input(self, src, _):
-        self.memory[src] = int(input("Enter input value: "))
-        return True
+    @zero_argument_assignment
+    def get_input(self, dst):
+        self.memory[dst] = self.input_queue.pop()
 
-    def write_output(self, src, modes):
-        value = self.memory[src] if positional_mode(modes, 0) else src
-        print(value)
-        return True
+    @one_argument_read
+    def write_output(self, a):
+        print(a)
 
-    def jump_if_true(self, src1, src2, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+    @two_argument_conditional
+    def jump_if_true(self, a, b):
         if a != 0:
             self.pc = b
-            return False
-        return True
 
-    def jump_if_false(self, src1, src2, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+    @two_argument_conditional
+    def jump_if_false(self, a, b):
         if a == 0:
             self.pc = b
-            return False
-        return True
-
-
-
 
