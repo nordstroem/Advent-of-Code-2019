@@ -66,7 +66,7 @@ class Computer:
         while self.memory[self.pc] != 99:
             instruction = str(self.memory[self.pc])
             opcode = int(instruction[-2:])
-            modes = [int(c) for c in instruction[:-2][::-1]] 
+            modes = [int(c) for c in instruction[-3::-1]] 
             parameters = [self.memory[self.pc + i] for i in range(1, self.parameter_counts[opcode] + 1)]
             update_pc = self.operations(opcode)(*parameters, *modes)
 
@@ -102,7 +102,7 @@ class Computer:
 
     @one_argument_read
     def write_output(self, a):
-        if(self.verbose):
+        if (self.verbose):
             print(a)
         self.output_queue.put(a)
         self.output_log.append(a)
