@@ -4,23 +4,25 @@ from collections import deque, defaultdict
 
 def two_argument_assignment(func):
     @wraps(func)
-    def wrapped(self, src1, src2, dst, mode1, mode2=0):
+    def wrapped(self, src1, src2, dst, mode1=0, mode2=0, mode3=0):
         a = self.read_value(src1, mode1)
         b = self.read_value(src2, mode2)
-        func(self, a, b, dst)
+        c = self.read_address(dst, mode3)
+        func(self, a, b, c)
         return True
     return wrapped
 
 def zero_argument_assignment(func):
     @wraps(func)
-    def wrapped(self, dst):
-        func(self, dst)
+    def wrapped(self, dst, mode=0):
+        a = self.read_address(dst, mode)
+        func(self, a)
         return True
     return wrapped
 
 def two_argument_conditional(func):
     @wraps(func)
-    def wrapped(self, src1, src2, mode1, mode2=0):
+    def wrapped(self, src1, src2, mode1=0, mode2=0):
         a = self.read_value(src1, mode1)
         b = self.read_value(src2, mode2)
         return func(self, a, b)
@@ -64,15 +66,19 @@ class Computer:
         while self.memory[self.pc] != 99:
             instruction = str(self.memory[self.pc])
             opcode = int(instruction[-2:])
-            modes = [int(c) for c in instruction[-3::-1]] 
+            modes = [int(c) for c in instruction[:-2][::-1]] 
             parameters = [self.memory[self.pc + i] for i in range(1, self.parameter_counts[opcode] + 1)]
             update_pc = self.operations(opcode)(*parameters, *modes)
-    
+
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
 
     def read_value(self, src, mode):
-        return self.memory[src] if mode == 0 else src
+        values = {0: self.memory[src], 1: src, 2: self.memory[self.relative_base + src]}
+        return values[mode]
+
+    def read_address(self, dst, mode):
+        return dst if mode == 0 else self.relative_base + dst
 
     @two_argument_assignment
     def add(self, a, b, dst):
@@ -117,4 +123,4 @@ class Computer:
 
     @one_argument_read
     def adjust_relative_base(self, a):
-        self.relative_base = a
+        self.relative_base += a
