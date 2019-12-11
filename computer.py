@@ -1,6 +1,7 @@
 import itertools
 from functools import wraps
 from collections import deque, defaultdict
+from inspect import getfullargspec
 
 def two_argument_assignment(func):
     @wraps(func)
@@ -9,7 +10,7 @@ def two_argument_assignment(func):
         b = self.read_value(src2, mode2)
         c = self.read_address(dst, mode3)
         func(self, a, b, c)
-        return True
+        self.pc += 4
     return wrapped
 
 def zero_argument_assignment(func):
@@ -17,15 +18,15 @@ def zero_argument_assignment(func):
     def wrapped(self, dst, mode=0):
         a = self.read_address(dst, mode)
         func(self, a)
-        return True
+        self.pc += 2
     return wrapped
 
-def two_argument_conditional(func):
+def two_argument_jump_conditional(func):
     @wraps(func)
     def wrapped(self, src1, src2, mode1=0, mode2=0):
         a = self.read_value(src1, mode1)
         b = self.read_value(src2, mode2)
-        return func(self, a, b)
+        self.pc = b if func(self, a) else self.pc + 3
     return wrapped
 
 def one_argument_read(func):
@@ -33,7 +34,7 @@ def one_argument_read(func):
     def wrapped(self, src, mode=0):
         a = self.read_value(src, mode)
         func(self, a)
-        return True
+        self.pc += 2
     return wrapped
 
 class Computer:
@@ -60,18 +61,15 @@ class Computer:
         }
         return ops[opcode]
 
-    parameter_counts = { 1: 3, 2: 3, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 1 }
-
     def run(self):
         while self.memory[self.pc] != 99:
             instruction = str(self.memory[self.pc])
             opcode = int(instruction[-2:])
             modes = [int(c) for c in instruction[-3::-1]] 
-            parameters = [self.memory[self.pc + i] for i in range(1, self.parameter_counts[opcode] + 1)]
-            update_pc = self.operations(opcode)(*parameters, *modes)
-
-            if (update_pc):
-                self.pc = self.pc + self.parameter_counts[opcode] + 1
+            operation = self.operations(opcode)
+            num_parameters = len(getfullargspec(operation).args) - len(getfullargspec(operation).defaults) 
+            parameters = [self.memory[self.pc + i] for i in range(1, num_parameters)]
+            operation(*parameters, *modes)
 
     def read_value(self, src, mode):
         values = {0: self.memory[src], 1: src, 2: self.memory[self.relative_base + src]}
@@ -107,19 +105,13 @@ class Computer:
         self.output_queue.put(a)
         self.output_log.append(a)
 
-    @two_argument_conditional
-    def jump_if_true(self, a, b):
-        if a != 0:
-            self.pc = b
-            return False
-        return True
+    @two_argument_jump_conditional
+    def jump_if_true(self, a):
+        return a != 0
 
-    @two_argument_conditional
-    def jump_if_false(self, a, b):
-        if a == 0:
-            self.pc = b
-            return False
-        return True
+    @two_argument_jump_conditional
+    def jump_if_false(self, a):
+        return a == 0
 
     @one_argument_read
     def adjust_relative_base(self, a):
