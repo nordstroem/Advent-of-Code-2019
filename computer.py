@@ -2,37 +2,34 @@ import itertools
 from functools import wraps
 from collections import deque, defaultdict
 
-def mode(modes, i):
-    return modes[-(i + 1)] if i < len(modes) else 0
-
 def two_argument_assignment(func):
     @wraps(func)
-    def wrapped(self, src1, src2, dst, modes):
-        a = self.read_value(src1, modes, 0)
-        b = self.read_value(src2, modes, 1)
+    def wrapped(self, src1, src2, dst, mode1, mode2=0):
+        a = self.read_value(src1, mode1)
+        b = self.read_value(src2, mode2)
         func(self, a, b, dst)
         return True
     return wrapped
 
 def zero_argument_assignment(func):
     @wraps(func)
-    def wrapped(self, dst, _):
+    def wrapped(self, dst):
         func(self, dst)
         return True
     return wrapped
 
 def two_argument_conditional(func):
     @wraps(func)
-    def wrapped(self, src1, src2, modes):
-        a = self.read_value(src1, modes, 0)
-        b = self.read_value(src2, modes, 1)
+    def wrapped(self, src1, src2, mode1, mode2=0):
+        a = self.read_value(src1, mode1)
+        b = self.read_value(src2, mode2)
         return func(self, a, b)
     return wrapped
 
 def one_argument_read(func):
     @wraps(func)
-    def wrapped(self, src, modes):
-        a = self.read_value(src, modes, 0)
+    def wrapped(self, src, mode=0):
+        a = self.read_value(src, mode)
         func(self, a)
         return True
     return wrapped
@@ -67,15 +64,15 @@ class Computer:
         while self.memory[self.pc] != 99:
             instruction = str(self.memory[self.pc])
             opcode = int(instruction[-2:])
-            modes = [int(c) for c in instruction[:-2]] 
+            modes = [int(c) for c in instruction[-3::-1]] 
             parameters = [self.memory[self.pc + i] for i in range(1, self.parameter_counts[opcode] + 1)]
-            update_pc = self.operations(opcode)(*parameters, modes)
+            update_pc = self.operations(opcode)(*parameters, *modes)
     
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
 
-    def read_value(self, src, modes, i):
-        return self.memory[src] if mode(modes, i) == 0 else src
+    def read_value(self, src, mode):
+        return self.memory[src] if mode == 0 else src
 
     @two_argument_assignment
     def add(self, a, b, dst):
