@@ -1,15 +1,15 @@
 import itertools
 from functools import wraps
-from collections import deque
+from collections import deque, defaultdict
 
-def positional_mode(modes, i):
-    return modes[-(i + 1)] == 0 if i < len(modes) else True
+def mode(modes, i):
+    return modes[-(i + 1)] if i < len(modes) else 0
 
 def two_argument_assignment(func):
     @wraps(func)
     def wrapped(self, src1, src2, dst, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+        a = self.read_value(src1, modes, 0)
+        b = self.read_value(src2, modes, 1)
         func(self, a, b, dst)
         return True
     return wrapped
@@ -24,27 +24,28 @@ def zero_argument_assignment(func):
 def two_argument_conditional(func):
     @wraps(func)
     def wrapped(self, src1, src2, modes):
-        a = self.memory[src1] if positional_mode(modes, 0) else src1
-        b = self.memory[src2] if positional_mode(modes, 1) else src2
+        a = self.read_value(src1, modes, 0)
+        b = self.read_value(src2, modes, 1)
         return func(self, a, b)
     return wrapped
 
 def one_argument_read(func):
     @wraps(func)
     def wrapped(self, src, modes):
-        a = self.memory[src] if positional_mode(modes, 0) else src
+        a = self.read_value(src, modes, 0)
         func(self, a)
         return True
     return wrapped
 
 class Computer:
     def __init__(self, memory, input_queue, output_queue, verbose=False):
-        self.memory = memory
+        self.memory = defaultdict(lambda: 0, {i: val for i, val in enumerate(memory)})
         self.pc = 0
         self.output_log = []
         self.verbose = verbose
         self.input_queue = input_queue
         self.output_queue = output_queue
+        self.relative_base = 0
 
     def operations(self, opcode):
         ops = {
@@ -55,11 +56,12 @@ class Computer:
             5: self.jump_if_true,
             6: self.jump_if_false,
             7: self.less_than,
-            8: self.equals
+            8: self.equals,
+            9: self.adjust_relative_base
         }
         return ops[opcode]
 
-    parameter_counts = { 1: 3, 2: 3, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3 }
+    parameter_counts = { 1: 3, 2: 3, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 1 }
 
     def run(self):
         while self.memory[self.pc] != 99:
@@ -71,6 +73,9 @@ class Computer:
     
             if (update_pc):
                 self.pc = self.pc + self.parameter_counts[opcode] + 1
+
+    def read_value(self, src, modes, i):
+        return self.memory[src] if mode(modes, i) == 0 else src
 
     @two_argument_assignment
     def add(self, a, b, dst):
@@ -113,3 +118,6 @@ class Computer:
             return False
         return True
 
+    @one_argument_read
+    def adjust_relative_base(self, a):
+        self.relative_base = a
