@@ -46,6 +46,7 @@ class Computer:
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.relative_base = 0
+        self.is_running = False
 
     def operations(self, opcode):
         ops = {
@@ -62,6 +63,7 @@ class Computer:
         return ops[opcode]
 
     def run(self):
+        self.is_running = True
         while self.memory[self.pc] != 99:
             instruction = str(self.memory[self.pc])
             opcode = int(instruction[-2:])
@@ -70,6 +72,7 @@ class Computer:
             num_parameters = len(getfullargspec(operation).args) - len(getfullargspec(operation).defaults) 
             parameters = [self.memory[self.pc + i] for i in range(1, num_parameters)]
             operation(*parameters, *modes)
+        self.is_running = False
 
     def read_value(self, src, mode):
         values = {0: self.memory[src], 1: src, 2: self.memory[self.relative_base + src]}
