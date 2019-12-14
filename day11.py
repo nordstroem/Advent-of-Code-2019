@@ -3,6 +3,8 @@ from computer import Computer
 from queue import Queue 
 from threading import Thread
 from collections import defaultdict
+import numpy as np
+import matplotlib.pyplot as plt
 
 memory = [int(x) for x in read_file("input11.txt").split(',')]
 input_queue = Queue()
@@ -10,7 +12,7 @@ output_queue = Queue()
 
 C = Computer(memory, input_queue, output_queue, verbose=False)
 
-input_queue.put(0)
+input_queue.put(1)
 thread = Thread(target=C.run)
 thread.start()
 
@@ -27,7 +29,7 @@ def get_new_position(position, direction):
         return (x, y - 1)
     return (x - 1, y)
 
-tiles = defaultdict(int)
+tiles = defaultdict(int, {(0, 0): 1})
 while True:
     try:
         new_color = output_queue.get(timeout=1)
@@ -41,4 +43,14 @@ while True:
 
 thread.join()
 
-print(len(tiles))
+(minx, maxx) = (min(x for (x, y) in tiles.keys()), max(x for (x, y) in tiles.keys()))
+(miny, maxy) = (min(y for (x, y) in tiles.keys()), max(y for (x, y) in tiles.keys()))
+
+img = np.zeros(((maxy - miny) + 1, (maxx - minx) + 1))
+
+for y in range(img.shape[0]):
+    for x in range(img.shape[1]):
+        img[img.shape[0]-y-1, x] = tiles[((minx + x), (miny + y))]
+
+plt.imshow(img)
+plt.show()

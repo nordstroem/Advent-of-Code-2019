@@ -96,7 +96,7 @@ class Computer:
 
     @zero_argument_assignment
     def get_input(self, dst):
-        self.memory[dst] = self.input_queue.get()
+        self.memory[dst] = self.input_queue.get(timeout=1)
 
     @one_argument_read
     def write_output(self, a):
