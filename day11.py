@@ -9,37 +9,30 @@ import matplotlib.pyplot as plt
 memory = [int(x) for x in read_file("input11.txt").split(',')]
 input_queue = Queue()
 output_queue = Queue()
-C = Computer(memory, input_queue, output_queue, verbose=False)
-
-input_queue.put(1)
+C = Computer(memory, input_queue, output_queue)
 thread = Thread(target=C.run)
 thread.start()
 
-position = (0, 0)
-direction = 0
+position = 0 + 0j
+direction =  0 - 1j
 
-def get_new_position(position, direction):
-    (x, y) = position
-    new_positions = {0: (x, y + 1), 1: (x + 1, y), 2: (x, y - 1), 3: (x - 1, y)}
-    return new_positions[direction]
-
-tiles = defaultdict(int, {(0, 0): 1})
+tiles = defaultdict(int, {position: 1})
+input_queue.put(1)
 while C.is_running:
-    new_color = output_queue.get(timeout=1)
-    turn = output_queue.get(timeout=1)
-    direction = (direction + (1 if turn else -1)) % 4
+    new_color = output_queue.get()
+    turn = output_queue.get()
+    direction = direction * (1j if turn else -1j)
     tiles[position] = new_color
-    position = get_new_position(position, direction)
+    position += direction
     input_queue.put(tiles[position])
 
 thread.join()
 
-(minx, maxx) = (min(x for (x, y) in tiles.keys()), max(x for (x, y) in tiles.keys()))
-(miny, maxy) = (min(y for (x, y) in tiles.keys()), max(y for (x, y) in tiles.keys()))
-img = np.zeros(((maxy - miny) + 1, (maxx - minx) + 1))
-for y in range(img.shape[0]):
-    for x in range(img.shape[1]):
-        img[img.shape[0]-y-1, x] = tiles[((minx + x), (miny + y))]
+(min_x, max_x) = (min(v.real for v in tiles.keys()), max(v.real for v in tiles.keys()))
+(min_y, max_y) = (min(v.imag for v in tiles.keys()), max(v.imag for v in tiles.keys()))
+img = np.zeros((int(max_y - min_y) + 1, int(max_x - min_x) + 1))
+for y, x in np.ndindex(img.shape):
+    img[y, x] = tiles[((min_x + x) + (min_y + y)*1j)]
 
 plt.imshow(img)
 plt.show()
