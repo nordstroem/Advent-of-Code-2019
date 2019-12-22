@@ -3,11 +3,7 @@ from functools import reduce
 from itertools import combinations
 import re
 import numpy as np
-<<<<<<< HEAD
 import math
-=======
-import time
->>>>>>> Day 13 part1 working.
 
 def read_lines(path, fun=lambda x: x):
     with open(path,'r') as inp:
@@ -39,34 +35,7 @@ while not all(result):
         else:
             seen[j][hsh] = steps
 
-<<<<<<< HEAD
     for p1, p2 in combinations(planets, 2):
-=======
-get_hash = lambda: tuple(reduce(lambda a, b: a + list(b.position) + list(b.velocity), planets, []))
-'''hsh = (planets[0].position[0], planets[0].position[1], planets[0].position[2], \
-       planets[0].velocity[0], planets[0].velocity[1], planets[0].velocity[2], \
-       planets[1].position[0], planets[1].position[1], planets[1].position[2], \
-       planets[1].velocity[0], planets[1].velocity[1], planets[1].velocity[2], \
-       planets[2].position[0], planets[2].position[1], planets[2].position[2], \
-       planets[2].velocity[0], planets[2].velocity[1], planets[2].velocity[2], \
-       planets[3].position[0], planets[3].position[1], planets[3].position[2], \
-       planets[3].velocity[0], planets[3].velocity[1], planets[3].velocity[2])
-'''
-seen = {get_hash(): True}
-
-pairs = combinations(planets, 2)
-times = []
-
-#positions = np.zeros(4, 3)
-#velocities = np.zeros(4, 3)
-
-#for r, c in np.ndindex(positions.shape):
-  #  positions[r, c] = planets[r].position[c]
-
-i = 0
-while 1:
-    for p1, p2 in pairs:
->>>>>>> Day 13 part1 working.
         gravity = np.sign(p2.position - p1.position)
         p1.velocity += gravity
         p2.velocity -= gravity
@@ -74,19 +43,8 @@ while 1:
     for p in planets:
         p.position += p.velocity
 
-<<<<<<< HEAD
     steps += 1
 lcm = lambda *args: reduce(lambda a, b: a * b // math.gcd(a, b), *args)
 print(lcm(result))
 
 #print(reduce(lambda a, b: a + b.energy(), planets, 0))
-=======
-    if get_hash() in seen:
-        print(i + 1)
-    else:
-        seen[get_hash()] = True
-    i += 1
-
-#print(np.mean(times) * 1000)
-#print(reduce(lambda a, b: a + b.energy(), planets, 0))
->>>>>>> Day 13 part1 working.
